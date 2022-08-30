@@ -20,10 +20,29 @@ buildscript {
         jcenter()
         mavenCentral()
         google()
+//        maven { url "http://maven.geelib.360.cn/nexus/service/rest/repository/browse/replugin/" }
+
+        /**
+         * ============================= 本地自定义插件 start ================================
+         */
+        // 本地自定义maven插件 （../../replugin-host-gradle/plugin 本地插件工程）
+        maven {url '../../replugin-host-gradle/plugin/HostGradle'}
+        /**
+         * ============================= 本地自定义插件 end ==================================
+         */
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.4'
-        classpath "com.qihoo360.replugin:replugin-host-gradle:${RP_VERSION}"
+
+        // classpath "com.qihoo360.replugin:replugin-host-gradle:${RP_VERSION}"
+
+        /**
+         * ============================= 本地自定义插件 start ================================
+         */
+        classpath 'com.qihoo360.replugin:replugin-host-gradle:1.0.0'
+        /**
+         * ============================= 本地自定义插件 end ==================================
+         */
     }
 }
 
@@ -33,6 +52,7 @@ allprojects {
         jcenter()
         mavenCentral()
         google()
+//        maven { url "http://maven.geelib.360.cn/nexus/service/rest/repository/browse/replugin/" }
     }
 }
 

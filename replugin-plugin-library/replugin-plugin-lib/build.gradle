@@ -40,10 +40,11 @@ android {
 }
 
 dependencies {
+    implementation project(path: ':replugin-common:replugin-common-lib')
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly 'com.android.support:appcompat-v7:28.+'
-    compileOnly 'androidx.appcompat:appcompat:1.1.0'
+    compileOnly 'androidx.appcompat:appcompat:1.5.0'
 }
 
-project.ext.RP_ARTIFACT_ID = 'replugin-plugin-lib'
-apply from: '../../rp-publish.gradle'
+//project.ext.RP_ARTIFACT_ID = 'replugin-plugin-lib'
+//apply from: '../../rp-publish.gradle'

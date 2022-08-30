@@ -20,10 +20,26 @@ buildscript {
         jcenter()
         mavenCentral()
         google()
+        /**
+         * ============================= 本地自定义插件 start ================================
+         */
+        // 本地自定义maven插件 （../../replugin-plugin-gradle/plugin 本地插件工程）
+        maven {url '../../../replugin-plugin-gradle/plugin/PluginGradle'}
+        /**
+         * ============================= 本地自定义插件 end ==================================
+         */
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.4'
-        classpath "com.qihoo360.replugin:replugin-plugin-gradle:${RP_VERSION}"
+
+//        classpath "com.qihoo360.replugin:replugin-plugin-gradle:${RP_VERSION}"
+        /**
+         * ============================= 本地自定义插件 start ================================
+         */
+        classpath 'com.qihoo360.replugin:replugin-plugin-gradle:1.0.0'
+        /**
+         * ============================= 本地自定义插件 end ==================================
+         */
     }
 }
 

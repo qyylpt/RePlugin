@@ -42,8 +42,9 @@ android {
 }
 
 dependencies {
+    implementation project(path: ':replugin-common:replugin-common-lib')
     compile fileTree(include: ['*.jar'], dir: 'libs')
 }
 
-project.ext.RP_ARTIFACT_ID = 'replugin-host-lib'
-apply from: '../../rp-publish.gradle'
+//project.ext.RP_ARTIFACT_ID = 'replugin-host-lib'
+//apply from: '../../rp-publish.gradle'

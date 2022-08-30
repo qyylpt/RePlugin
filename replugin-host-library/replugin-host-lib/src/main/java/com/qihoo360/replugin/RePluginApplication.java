@@ -20,6 +20,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
 
+import com.qihoo360.replugin.utils.ZLog;
+
 /**
  * 方便宿主直接继承RePluginApplication来完成插件框架的注册 <p>
  * 此外，也可以无需继承此Application，自己择机调用相关方法来使用
@@ -53,7 +55,7 @@ public class RePluginApplication extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-
+        ZLog.init(true, base);
         RePluginConfig c = createConfig();
         if (c == null) {
             c = new RePluginConfig();

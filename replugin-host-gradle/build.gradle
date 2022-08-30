@@ -51,5 +51,24 @@ dependencies {
     compile 'net.dongliu:apk-parser:2.2.0'
 }
 
-project.ext.RP_ARTIFACT_ID = 'replugin-host-gradle'
-apply from: '../rp-publish.gradle'
+// ****************** 本地插件发布 start ***************
+group='com.qihoo360.replugin'
+version='1.0.0'
+uploadArchives {
+    repositories {
+        mavenDeployer {
+
+//            // 提交到远程服务器
+//            repository(url: "http://www.baidu.com") {
+//                authentication(username: "admin", password: "admin")
+//            }
+
+            // 本地Maven地址
+            repository(url: uri('./plugin/HostGradle'))
+        }
+    }
+}
+// ****************** 本地插件发布 end ***************
+
+//project.ext.RP_ARTIFACT_ID = 'replugin-host-gradle'
+//apply from: '../rp-publish.gradle'
