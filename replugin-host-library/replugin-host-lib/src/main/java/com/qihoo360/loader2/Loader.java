@@ -43,6 +43,7 @@ import com.qihoo360.replugin.component.receiver.PluginReceiverProxy;
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.helper.LogRelease;
 import com.qihoo360.replugin.model.PluginInfo;
+import com.qihoo360.replugin.utils.ZLog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -63,6 +64,7 @@ import java.util.Set;
 import static com.qihoo360.replugin.helper.LogDebug.LOADER_TAG;
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 import static com.qihoo360.replugin.helper.LogDebug.TAG_NO_PN;
 import static com.qihoo360.replugin.helper.LogRelease.LOGR;
 
@@ -172,6 +174,7 @@ class Loader {
 
     final boolean loadDex(ClassLoader parent, int load) {
         try {
+            ZLog.rAppend("开始提取插件信息Path : " + mPath);
             PackageManager pm = mContext.getPackageManager();
 
             mPackageInfo = Plugin.queryCachedPackageInfo(mPath);
@@ -241,10 +244,10 @@ class Loader {
             if (mComponents == null) {
                 // ComponentList
                 mComponents = new ComponentList(mPackageInfo, mPath, mPluginObj.mInfo);
-
+                ZLog.rAppend("获取【四大组件】和 【Application】的系统Info的List 完成!!!");
                 // 动态注册插件中声明的 receiver
                 regReceivers();
-
+                ZLog.rAppend("常驻进程注册动态广播（Manifest中声明的广播，一个转换过程）");
                 // 缓存表：ComponentList
                 synchronized (Plugin.FILENAME_2_COMPONENT_LIST) {
                     Plugin.FILENAME_2_COMPONENT_LIST.put(mPath, new WeakReference<>(mComponents));
@@ -253,9 +256,10 @@ class Loader {
                 /* 只调整一次 */
                 // 调整插件中组件的进程名称
                 adjustPluginProcess(mPackageInfo.applicationInfo);
-
+                ZLog.rAppend("调整插件中组件的进程名称，用宿主中的进程坑位来接收插件中的自定义进程。 如果插件中没有配置静态的 “meta-data：process_map” 进行静态的进程映射，则自动为插件中组件分配进程");
                 // 调整插件中 Activity 的 TaskAffinity
                 adjustPluginTaskAffinity(mPluginName, mPackageInfo.applicationInfo);
+                ZLog.rAppend("调整插件中 Activity 的 TaskAffinity");
             }
 
             if (load == Plugin.LOAD_INFO) {
@@ -295,6 +299,7 @@ class Loader {
                     Plugin.FILENAME_2_RESOURCES.put(mPath, new WeakReference<>(mPkgResources));
                 }
             }
+            ZLog.rAppend("提取 Resources 完成");
             if (load == Plugin.LOAD_RESOURCES) {
                 return isResourcesLoaded();
             }
@@ -365,14 +370,13 @@ class Loader {
             if (LOG) {
                 LogDebug.d(PLUGIN_TAG, "pkg context=" + mPkgContext);
             }
-
+            ZLog.rAppend("ClassLoader 加载完成!!!");
         } catch (Throwable e) {
             if (LOGR) {
                 LogRelease.e(PLUGIN_TAG, "p=" + mPath + " m=" + e.getMessage(), e);
             }
             return false;
         }
-
         return true;
     }
 

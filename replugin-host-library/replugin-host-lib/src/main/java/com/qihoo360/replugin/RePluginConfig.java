@@ -20,6 +20,7 @@ import android.content.Context;
 
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.helper.LogRelease;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.io.File;
 
@@ -35,6 +36,8 @@ import java.io.File;
  */
 
 public final class RePluginConfig {
+
+    private final String TAG = "RePluginConfig";
 
     private RePluginCallbacks callbacks;
     private RePluginEventCallbacks eventCallbacks;
@@ -315,6 +318,7 @@ public final class RePluginConfig {
     void initDefaults(Context context) {
         if (pnInstallDir == null) {
             pnInstallDir = context.getFilesDir();
+            ZLog.r(TAG, "pn 插件路径 : " + pnInstallDir.getAbsolutePath());
         }
 
         if (callbacks == null) {

@@ -48,6 +48,7 @@ import com.qihoo360.replugin.model.PluginInfo;
 import com.qihoo360.replugin.packages.IPluginManagerServer;
 import com.qihoo360.replugin.packages.PluginInfoUpdater;
 import com.qihoo360.replugin.packages.PluginManagerServer;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -140,7 +141,9 @@ class PmHostSvc extends IPluginHost.Stub {
     PmHostSvc(Context context, PmBase packm) {
         mContext = context;
         mPluginMgr = packm;
+        // 创建一个service管理者，这个类，在PmBase的构造中的客户端“PluginProcessPer ”的构造中也创建了一个这个对象
         mServiceMgr = new PluginServiceServer(context);
+        // 创建一个插件管理者，用来控制插件的安装、卸载、获取等
         mManager = new PluginManagerServer(context);
     }
 

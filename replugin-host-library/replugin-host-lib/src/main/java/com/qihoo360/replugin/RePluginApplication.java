@@ -55,7 +55,6 @@ public class RePluginApplication extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        ZLog.init(true, base);
         RePluginConfig c = createConfig();
         if (c == null) {
             c = new RePluginConfig();

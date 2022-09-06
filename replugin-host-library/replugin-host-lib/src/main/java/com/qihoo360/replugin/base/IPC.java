@@ -26,6 +26,7 @@ import com.qihoo360.loader.utils.SysUtils;
 import com.qihoo360.loader2.PluginProcessMain;
 import com.qihoo360.replugin.helper.HostConfigHelper;
 import com.qihoo360.replugin.helper.LogDebug;
+import com.qihoo360.replugin.utils.ZLog;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogRelease.LOGR;
@@ -52,11 +53,16 @@ public class IPC {
      * [HIDE] 外界请不要调用此方法
      */
     public static void init(Context context) {
+        // 通过proc文件获取当前进程名
         sCurrentProcess = SysUtils.getCurrentProcessName();
+        // 获取当前进程pid
         sCurrentPid = Process.myPid();
+        // 获取宿主程序包名
         sPackageName = context.getApplicationInfo().packageName;
 
-        // 设置最终的常驻进程名
+        // 判断是否使用“常驻进程”（见PERSISTENT_NAME）作为插件的管理进程
+        // 并设置常驻进程名称，默认常驻进程名称是以:GuardService结尾的，可以通过
+        // 宿主module下的build.gradle的repluginHostConfig{}中设置，很多参数参考宿主生成的RePluginHostConfig类
         if (HostConfigHelper.PERSISTENT_ENABLE) {
             String cppn = HostConfigHelper.PERSISTENT_NAME;
             if (!TextUtils.isEmpty(cppn)) {
@@ -67,11 +73,15 @@ public class IPC {
                 }
             }
         } else {
+            // 如果不使用常驻进程管理插件，则使用当前进程名称
             sPersistentProcessName = sPackageName;
         }
 
+        //判断当前进程是否是主进程
         sIsUIProcess = sCurrentProcess.equals(sPackageName);
+        //判断当前线程是不是常驻进程
         sIsPersistentProcess = sCurrentProcess.equals(sPersistentProcessName);
+        ZLog.r(TAG, "sCurrentProcess : " + sCurrentProcess + "; sCurrentPid : " + sCurrentPid + "; sPackageName : " + sPackageName + "; sIsUIProcess : " + sIsUIProcess + "; sIsPersistentProcess : " + sIsPersistentProcess );
     }
 
     /**

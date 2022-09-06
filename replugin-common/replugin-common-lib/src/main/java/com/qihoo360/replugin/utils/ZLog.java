@@ -1,6 +1,7 @@
 package com.qihoo360.replugin.utils;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.Closeable;
@@ -12,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.xml.parsers.FactoryConfigurationError;
 
 /**
  * @author : zsf
@@ -27,22 +30,59 @@ public class ZLog {
     private static final int D = 2;
     private static final int E = 3;
 
-    private static final String TAG_PREFIX = "RePlugin";
+    private static final String TAG_PREFIX = "Zsf_Debug";
     private static int CLASS_METHOD_STACK_DEPTH = 5;
     private static final String processName = getCurrentProcessName();
     private static long currentTime = System.currentTimeMillis();
     private static boolean logSwitch = true;
+    private static boolean uiProcessSwitch = false;
 
     private static Context appContext = null;
 
-    public static void setIsDebug(boolean isDebug) {
-        logSwitch = isDebug;
-    }
+    private static StringBuilder appendLog = new StringBuilder();
 
     public static void init(boolean isDebug, Context context) {
         logSwitch = isDebug;
         appContext = context;
-        d("ZLog", "init success; isDebug : " + isDebug);
+        uiProcessSwitch = TextUtils.equals(getCurrentProcessName(), context.getApplicationInfo().packageName);
+        if (uiProcessSwitch) {
+            Log.d(getAssemblyTag(TAG_PREFIX), getWholeStackDepthInfo(false, "logSwitch : " + logSwitch + "; uiProcessSwitch : true"));
+        } else {
+            Log.e(getAssemblyTag(TAG_PREFIX), getWholeStackDepthInfo(false, "logSwitch : " + logSwitch + "; uiProcessSwitch : false"));
+        }
+    }
+
+    public static void rAppend(String msg) {
+        int length = appendLog.length();
+        if (length == 0) {
+            appendLog.append(msg);
+            return;
+        }
+        appendLog.append("\n            ").append(msg);
+    }
+
+    public static void rAppendEnd(String tag) {
+        if (!logSwitch) {
+            return;
+        }
+        String msg = appendLog.toString();
+        if (uiProcessSwitch) {
+            Log.d(getAssemblyTag(tag), getWholeStackDepthInfo(false, msg));
+        } else {
+            Log.e(getAssemblyTag(tag), getWholeStackDepthInfo(false, msg));
+        }
+        appendLog.delete(0, appendLog.length());
+    }
+
+    public static void r(String tag, String msg) {
+        if (!logSwitch) {
+            return;
+        }
+        if (uiProcessSwitch) {
+            Log.d(getAssemblyTag(tag), getWholeStackDepthInfo(false, msg));
+        } else {
+            Log.e(getAssemblyTag(tag), getWholeStackDepthInfo(false, msg));
+        }
     }
 
     public static void i(String tag, String msg) {
@@ -162,7 +202,8 @@ public class ZLog {
         } else {
             String methodName = getCurrentMethod(CLASS_METHOD_STACK_DEPTH);
             String className = getCurrentClass(CLASS_METHOD_STACK_DEPTH);
-            sb.append("   【进程 : " + processName + "】【 " + className + " -> " + methodName + " 】 <<<-- msg -->>> " + msg);
+            sb.append("-> \n");
+            sb.append("   进程 : 【 " + processName + " 】\n   方法 : 【 " + className + " -> " + methodName + " 】\n   日志 : 【 " + msg + " 】");
         }
         return sb.toString();
     }

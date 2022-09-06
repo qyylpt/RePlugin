@@ -25,6 +25,7 @@ import com.qihoo360.replugin.RePlugin;
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.utils.Charsets;
 import com.qihoo360.replugin.utils.FileUtils;
+import com.qihoo360.replugin.utils.ZLog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -87,11 +88,13 @@ public class PluginInfoList implements Iterable<PluginInfo> {
                 return false;
             }
 
+            ZLog.rAppend("常驻进程加载插件信息 : " + f.getAbsolutePath());
             // 2. 解析出JSON
             final JSONArray jArr = new JSONArray(result);
             for (int i = 0; i < jArr.length(); i++) {
                 final JSONObject jo = jArr.optJSONObject(i);
                 final PluginInfo pi = PluginInfo.createByJO(jo);
+                ZLog.rAppend("插件信息 : " + pi);
                 if (pi == null) {
                     if (LogDebug.LOG) {
                         LogDebug.e(TAG, "load: PluginInfo Invalid. Ignore! jo=" + jo);
@@ -106,6 +109,7 @@ public class PluginInfoList implements Iterable<PluginInfo> {
 
                 addToMap(pi);
             }
+            ZLog.rAppendEnd(TAG);
             return true;
         } catch (IOException e) {
             if (LogDebug.LOG) {
@@ -127,6 +131,7 @@ public class PluginInfoList implements Iterable<PluginInfo> {
             if (LogDebug.LOG) {
                 Log.d(LogDebug.TAG_NO_PN, "save json into p.l=" + jsonArr.toString());
             }
+            ZLog.r(TAG, "常驻进程首次加载插件写入 p.l 文件 : " + f.getAbsolutePath());
             FileUtils.writeStringToFile(f, jsonArr.toString(), Charsets.UTF_8);
             return true;
         } catch (IOException e) {

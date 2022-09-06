@@ -24,6 +24,7 @@ import com.qihoo360.mobilesafe.api.Tasks;
 import com.qihoo360.replugin.base.IPC;
 import com.qihoo360.replugin.component.process.PluginProcessHost;
 import com.qihoo360.replugin.helper.LogDebug;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
@@ -31,11 +32,14 @@ import java.util.regex.Pattern;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 
 /**
  * @author RePlugin Team
  */
 public class PluginManager {
+
+    private static final String TAG = "PluginManager";
 
     private static final Pattern PROCESS_NAME_PATTERN = Pattern.compile(Constant.STUB_PROCESS_SUFFIX_PATTERN);
 
@@ -87,11 +91,12 @@ public class PluginManager {
     static final void init(Context context) {
         // 初始化操作，方便后面执行任务，不必担心Handler为空的情况
         Tasks.init();
-        //
+
         sUid = android.os.Process.myUid();
 
-        //
         sPluginProcessIndex = evalPluginProcess(IPC.getCurrentProcessName());
+
+        ZLog.r(TAG, "sUid : " + sUid + "; sPluginProcessIndex : " + sPluginProcessIndex);
     }
 
     static final int evalPluginProcess(String name) {
@@ -99,48 +104,40 @@ public class PluginManager {
 
         try {
             if (TextUtils.equals(IPC.getPackageName(), name)) {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "plugin process checker: default, index=" + 0);
-                }
+                ZLog.r(TAG, "UI进程 sPluginProcessIndex : " + IPluginManager.PROCESS_UI);
                 return IPluginManager.PROCESS_UI;
             }
 
             if (!TextUtils.isEmpty(name)) {
                 if (name.contains(PluginProcessHost.PROCESS_PLUGIN_SUFFIX2)) {
                     String tail = PluginProcessHost.processTail(name);
+                    ZLog.r(TAG,"插件进程 tail : " + tail + "; index : " + PluginProcessHost.PROCESS_INT_MAP.get(tail) + "; sPluginProcessIndex : " + PluginProcessHost.PROCESS_INT_MAP.get(tail));
                     return PluginProcessHost.PROCESS_INT_MAP.get(tail);
                 }
             }
 
             Matcher m = PROCESS_NAME_PATTERN.matcher(name);
             if (m == null || !m.matches()) {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "plugin process checker: non plugin process in=" + name);
-                }
+                ZLog.r(TAG, "非插件进程 & 非 UI 进程 : " + name + "; sPluginProcessIndex : " + IPluginManager.PROCESS_AUTO);
                 return IPluginManager.PROCESS_AUTO;
             }
 
             MatchResult r = m.toMatchResult();
             if (r == null || r.groupCount() != 2) {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "plugin process checker: no group in=" + name);
-                }
+                ZLog.r(TAG, "Matcher 没有匹配到对应的组 : " + name + "; sPluginProcessIndex : " + IPluginManager.PROCESS_AUTO);
                 return IPluginManager.PROCESS_AUTO;
             }
 
             String pr = r.group(1);
             if (!TextUtils.equals(IPC.getPackageName(), pr)) {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "plugin process checker: package name not match in=" + name);
-                }
+                ZLog.r(TAG, "Matcher 下标 1 不匹配到对应的组 pr : " + pr + "; sPluginProcessIndex : " + IPluginManager.PROCESS_AUTO);
                 return IPluginManager.PROCESS_AUTO;
             }
 
             String str = r.group(2);
             index = Integer.parseInt(str);
-            if (LOG) {
-                LogDebug.d(PLUGIN_TAG, "plugin process checker: index=" + index);
-            }
+            ZLog.r(TAG, "Matcher 下标 1、2都匹配 sPluginProcessIndex : " + index);
+
         } catch (Throwable e) {
             if (LOG) {
                 LogDebug.d(PLUGIN_TAG, e.getMessage(), e);

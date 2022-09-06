@@ -79,6 +79,7 @@ public class AssetsUtils {
      */
     public static final boolean quickExtractTo(Context context, final PluginInfo info, final String dir, final String dstName, String dexOutputDir) {
         QuickExtractResult result = quickExtractTo(context, info.getPath(), dir, dstName, dexOutputDir);
+        ZLog.rAppend("提取插件文件到目标位置结束 result : " + result);
         // 释放失败 || 被释放的文件已经存在
         switch (result) {
             case FAIL:
@@ -90,7 +91,9 @@ public class AssetsUtils {
                 // Added by Jiongxuan Zhang
                 File file = new File(dir + "/" + dstName);
                 File libDir = info.getNativeLibsDir();
+                ZLog.rAppend("开始提取SO : " + libDir.getAbsolutePath());
                 boolean rc = PluginNativeLibsHelper.install(file.getAbsolutePath(), libDir);
+                ZLog.rAppend("提取SO结束...");
                 if (!rc) {
                     if (LOGR) {
                         LogRelease.e(TAG, "a u e rc f so " + file.getPath());

@@ -31,6 +31,7 @@ import com.qihoo360.replugin.helper.LogRelease;
 import com.qihoo360.replugin.model.PluginInfo;
 import com.qihoo360.replugin.packages.PluginManagerProxy;
 import com.qihoo360.replugin.packages.PluginManagerServer;
+import com.qihoo360.replugin.utils.ZLog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,6 +47,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.MAIN_TAG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 import static com.qihoo360.replugin.helper.LogRelease.LOGR;
 
 /**
@@ -253,12 +255,14 @@ public class PluginProcessMain {
             if (LOGR) {
                 LogRelease.e(PLUGIN_TAG, "p.p fhb fail");
             }
+            ZLog.r(TAG, "无法连接到常驻进程，当前进程自杀...");
             System.exit(1);
         }
         try {
             binder.linkToDeath(new IBinder.DeathRecipient() {
                 @Override
                 public void binderDied() {
+                    ZLog.r(TAG, "常驻进程死掉之后回调...");
                     if (LOGR) {
                         LogRelease.i(PLUGIN_TAG, "p.p d, p.h s n");
                     }
@@ -277,6 +281,7 @@ public class PluginProcessMain {
 
                     //断开连接后，需要尝试重新连接
                     if (diedAction != null) {
+                        ZLog.r(TAG, "常驻进程死掉之后回调,重新尝试连接...");
                         diedAction.onDied();
                     }
                 }
@@ -312,6 +317,7 @@ public class PluginProcessMain {
         }
 
         // 注册该进程信息到“插件管理进程”中
+        ZLog.r(TAG, "开始注册当前进程到（插件管理进程)");
         PMF.sPluginMgr.attach();
     }
     /**
@@ -606,6 +612,7 @@ public class PluginProcessMain {
         writeProcessClientLock(new Action<Void>() {
             @Override
             public Void call() {
+                ZLog.r(TAG, "常驻进程添加插件进程(" + pr.name + ")完成");
                 ALL.put(pr.name, pr);
                 return null;
             }

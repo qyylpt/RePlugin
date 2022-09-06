@@ -52,6 +52,7 @@ import com.qihoo360.replugin.helper.LogRelease;
 import com.qihoo360.replugin.model.PluginInfo;
 import com.qihoo360.replugin.packages.PluginManagerProxy;
 import com.qihoo360.replugin.utils.ReflectUtils;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -70,6 +71,7 @@ import static com.qihoo360.replugin.packages.PluginInfoUpdater.ACTION_UNINSTALL_
 
 /**
  * @author RePlugin Team
+ *
  */
 class PmBase {
 
@@ -231,32 +233,44 @@ class PmBase {
     }
 
     PmBase(Context context) {
-        //
+
+        // 引用Application
         mContext = context;
 
         // TODO init
         //init(context, this);
-
+        // 判断当前进程类型,ui进程或者插件进程。sPluginProcessIndex 在上面的PluginManager.init中赋值
         if (PluginManager.sPluginProcessIndex == IPluginManager.PROCESS_UI || PluginManager.isPluginProcess()) {
             String suffix;
             if (PluginManager.sPluginProcessIndex == IPluginManager.PROCESS_UI) {
+                // ui进程,设置 suffix = N1;
                 suffix = "N1";
             } else {
+                // PluginProcessHost.PROCESS_COUNT = 3(自定义插件的数量，暂时只支持3个自定义进程),PluginManager 在 init 方法去计算 sPluginProcessIndex
+                // 时，会去取 PluginManager.PROCESS_INT_MAP,该 map 在 static 中初始化。所以后缀值目前只可能是 0 或 1
                 suffix = "" + PluginManager.sPluginProcessIndex;
             }
-            //
+            // CONTAINER_PROVIDER_PART = .loader.p.Provider
+            // 结果 = 包名.loader.p.ProviderN1 或者 包名.loader.p.Provider0 或者 包名.loader.p.Provider1
             mContainerProviders.add(IPC.getPackageName() + CONTAINER_PROVIDER_PART + suffix);
-            //
+            // CONTAINER_SERVICE_PART = .loader.s.Service
+            // 结果 = 包名.loader.s.ServiceN1 或者 包名.loader.s.Service0 或者包名.loader.s.Service1
             mContainerServices.add(IPC.getPackageName() + CONTAINER_SERVICE_PART + suffix);
+            ZLog.rAppend("mContainerProviders : " + IPC.getPackageName() + CONTAINER_PROVIDER_PART + suffix);
+            ZLog.rAppend("mContainerServices : " + IPC.getPackageName() + CONTAINER_SERVICE_PART + suffix);
+            ZLog.rAppendEnd(TAG);
         }
 
-        //
+        // 它是一个 Binder 对象，它代表了“当前 Client 端”，也可以简单的想象成是插件，但并不全是插件.使用它来和Server端进行通信.
+        // 这个类的构造中有创建了两个类，一个是 PluginContainers，用来管理Activity坑位信息的容器，初始化了多种不同启动模式和样式Activity的坑位信息。
+        // 另一个PluginServiceServer类，这个类是 RePlugin 中的一个核心类，主要负责了对Service的提供和调度工作，例如startService、stopService、bindService、unbindService全部都由这个类管理
         mClient = new PluginProcessPer(context, this, PluginManager.sPluginProcessIndex, mContainerActivities);
 
-        //
+        // 创建 PluginCommImpl 类，负责宿主与插件、插件间的互通，很多对提供方法都经过这里中转或者最终调到这里.可通过插件的Factory直接调用，也可通过RePlugin来跳转
+        // 创建的时候只是引用了Application和PmBase
         mLocal = new PluginCommImpl(context, this);
 
-        //
+        // RePlugin 框架中内部逻辑使用的很多方法都在这里，包括插件中通过“反射”调用的内部逻辑如 PluginActivity 类的调用、Factory2 等
         mInternal = new PluginLibraryInternalProxy(this);
     }
 
@@ -264,13 +278,16 @@ class PmBase {
 
         RePlugin.getConfig().getCallbacks().initPnPluginOverride();
 
+        // 是否使用常驻进程（默认使用常驻进程）
         if (HostConfigHelper.PERSISTENT_ENABLE) {
             // （默认）“常驻进程”作为插件管理进程，则常驻进程作为Server，其余进程作为Client
             if (IPC.isPersistentProcess()) {
-                // 初始化“Server”所做工作
+                ZLog.r(TAG, "常驻进程开始初始化（ " + IPC.getCurrentProcessName() +  " ）...");
+                // 初始化“Server”所做工作（插件管理进程）
                 initForServer();
             } else {
-                // 连接到Server
+                ZLog.r(TAG, "UI进程 or 其他进程开始初始化（ " + IPC.getCurrentProcessName() + " ）...");
+                // 连接到Server （其他进程）
                 initForClient();
             }
         } else {
@@ -289,15 +306,15 @@ class PmBase {
             }
         }
 
-        // 最新快照
+        // 从 mPlugins 中将所有插件信息取出，保存到 PLUGINS 中，PLUGINS 是一个HashMap，保存的 key 是包名或者别名，value 是 PluginInfo
         PluginTable.initPlugins(mPlugins);
 
-        // 输出
-        if (LOG) {
-            for (Plugin p : mPlugins.values()) {
-                LogDebug.d(PLUGIN_TAG, "plugin: p=" + p.mInfo);
-            }
+        ZLog.rAppend("plugin: 同时使用 PackageName 和 Alias 作为 Key 保存一次插件信息");
+        for (String p : mPlugins.keySet()) {
+            ZLog.rAppend("plugin: key = " + p + "; value : " + mPlugins.get(p));
         }
+        ZLog.rAppendEnd(TAG);
+
     }
 
     /**
@@ -314,33 +331,48 @@ class PmBase {
         StubProcessManager.schedulePluginProcessLoop(StubProcessManager.CHECK_STAGE1_DELAY);
 
         // 兼容即将废弃的p-n方案 by Jiongxuan Zhang
+        // 检索插件并存进 PxAll 中
+        // 同过 plugins-builtin.json 文件加载 assets 目录下 json 文件中等级的插件信息
         mAll = new Builder.PxAll();
         Builder.builder(mContext, mAll);
 
         // [Newest!] 使用全新的RePlugin APK方案
         // Added by Jiongxuan Zhang
         try {
+            // 常驻进程加载插件信息 : /data/user/0/com.qihoo360.replugin.sample.host/app_p_a/p.l
+            // 首次加载 文件不存在 故此 list 是空的
             List<PluginInfo> l = PluginManagerProxy.load();
             if (l == null || l.isEmpty()) {
-                //说明是第一次启动，内置信息还没有添加进去，需要添加内置信息,自己单纯的更新到p.l文件，没有执行文件的拷贝和安装，路径还是plugins/xxx.jar
-                //主要是为了让内置插件被Replugin认识，加载的时候，我们做真正的安装（拷贝文件到app_p_a）
+
+                ZLog.rAppend("App 首次启动常驻进程加载插件...");
+
+                // 说明是第一次启动，内置信息还没有添加进去，需要添加内置信息,自己单纯的更新到p.l文件，没有执行文件的拷贝和安装，路径还是plugins/xxx.jar
+                // 主要是为了让内置插件被Replugin认识，加载的时候，我们做真正的安装（拷贝文件到app_p_a）
+                // 常驻进程首次加载插件写入 p.l 文件 : /data/user/0/com.qihoo360.replugin.sample.host/app_p_a/p.l
                 l = PluginManagerProxy.preInstallBuiltins(mAll.getPlugins());
-                if (LOG && l != null) {
-                    Log.d(TAG_NO_PN, "installBuiltins, plugin size=" + l.size());
+
+                ZLog.rAppend("首次常驻进程加载插件完成 size : " + l.size());
+
+                for (int i = 0; i < l.size(); i++) {
+                    ZLog.rAppend(l.get(i) + "");
                 }
+
             } else {
-                //需要找到内置有更新的插件，然后重新写入p.l文件中
+                ZLog.rAppend("App 非首次启动 ");
+                // 需要找到内置有更新的插件，然后重新写入p.l文件中
                 List<PluginInfo> newestBuiltin = findNewestBuiltin(mAll.getPlugins(), l);
+                ZLog.rAppend("检索存在需要更新的插件size : " + newestBuiltin.size());
                 if (!newestBuiltin.isEmpty()) {
                     newestBuiltin = PluginManagerProxy.preInstallBuiltins(newestBuiltin);
                     refreshPluginMap(newestBuiltin);
                 }
+                ZLog.rAppendEnd(TAG);
             }
-            if (l != null) {
-                // 将"纯APK"插件信息并入总的插件信息表中，方便查询
-                // 这里有可能会覆盖之前在p-n中加入的信息。本来我们就想这么干，以"纯APK"插件为准
-                refreshPluginMap(l);
-            }
+            // 将"纯APK"插件信息并入总的插件信息表中，方便查询
+            // 这里有可能会覆盖之前在p-n中加入的信息。本来我们就想这么干，以"纯APK"插件为准
+            // 读取上次 data/user/0/com.qihoo360.replugin.sample.host/app_p_a/p.l 文件中插件信息,对比版本号重新组合更新版本后的所有插件信息
+            refreshPluginMap(l);
+            ZLog.rAppendEnd(TAG);
         } catch (RemoteException e) {
             if (LOGR) {
                 LogRelease.e(PLUGIN_TAG, "lst.p: " + e.getMessage(), e);
@@ -390,6 +422,7 @@ class PmBase {
         }
 
         // 1. 先尝试连接，需要注册binder连接断开监听，以便于能重新建立连接
+        ZLog.r(TAG, "连接 HOST 服务");
         PluginProcessMain.connectToHostSvc(new PluginProcessMain.DiedAction() {
             @Override
             public void onDied() {
@@ -440,6 +473,7 @@ class PmBase {
         if (updatedPlugins != null) {
             refreshPluginMap(updatedPlugins);
         }
+        ZLog.rAppendEnd(TAG);
     }
 
     /**
@@ -481,10 +515,10 @@ class PmBase {
      * @param plugin 待add插件的Plugin对象
      */
     private void putPluginObject(PluginInfo info, Plugin plugin) {
+        ZLog.rAppend("alias : " + info.getAlias() + "; packageName : " + info.getPackageName());
         if (mPlugins.containsKey(info.getAlias()) || mPlugins.containsKey(info.getPackageName())) {
-            if (LOG) {
-                LogDebug.d(PLUGIN_TAG, "当前内置插件列表中已经有" + info.getName() + "，需要看看谁的版本号大。");
-            }
+
+            ZLog.rAppend("当前内置插件列表中已经有" + info.getName() + "，需要看看谁的版本号大。");
 
             // 找到已经存在的
             Plugin existedPlugin = mPlugins.get(info.getPackageName());
@@ -493,9 +527,8 @@ class PmBase {
             }
 
             if (existedPlugin.mInfo.getVersion() < info.getVersion()) {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "新传入的纯APK插件, name=" + info.getName() + ", 版本号比较大,ver=" + info.getVersion() + ",以TA为准。");
-                }
+
+                ZLog.rAppend( "新传入的纯APK插件, name=" + info.getName() + ", 版本号比较大,ver=" + info.getVersion() + ",以TA为准。");
 
                 // 同时加入PackageName和Alias（如有）
                 mPlugins.put(info.getPackageName(), plugin);
@@ -504,14 +537,10 @@ class PmBase {
                     mPlugins.put(info.getAlias(), plugin);
                 }
             } else {
-                if (LOG) {
-                    LogDebug.d(PLUGIN_TAG, "新传入的纯APK插件" + info.getName() + "版本号还没有内置的大，什么都不做。");
-                }
+                ZLog.rAppend( "新传入的纯APK插件" + info.getName() + "版本号还没有内置的大，什么都不做。");
             }
         } else {
-            if (LOG) {
-                LogRelease.i(PLUGIN_TAG, "更新插件,plugin=" + info);
-            }
+            ZLog.rAppend( "当前进程初始记录插件, plugin = " + info);
             // 同时加入PackageName和Alias（如有）
             mPlugins.put(info.getPackageName(), plugin);
             if (!TextUtils.isEmpty(info.getAlias())) {
@@ -546,12 +575,14 @@ class PmBase {
         for (Plugin p : mPlugins.values()) {
             p.attach(mContext, mClassLoader, mLocal);
         }
-
         // 加载默认插件
         if (PluginManager.isPluginProcess()) {
+            ZLog.r(TAG,"mDefaultPluginName : " + mDefaultPluginName);
             if (!TextUtils.isEmpty(mDefaultPluginName)) {
-                //
+                ZLog.rAppend("开始加载插件......");
+                ZLog.rAppend("mDefaultPluginName : " + mDefaultPluginName);
                 Plugin p = mPlugins.get(mDefaultPluginName);
+                ZLog.rAppend("Plugin : " + p);
                 if (p != null) {
                     boolean rc = p.load(Plugin.LOAD_APP, true);
                     if (!rc) {
@@ -564,6 +595,7 @@ class PmBase {
                         mClient.init(p);
                     }
                 }
+                ZLog.rAppendEnd(TAG);
             }
         }
     }
@@ -1221,6 +1253,7 @@ class PmBase {
 
             // 同时加入PackageName和Alias（如有）
             putPluginObject(info, plugin);
+            ZLog.rAppendEnd(TAG);
         }
     }
 

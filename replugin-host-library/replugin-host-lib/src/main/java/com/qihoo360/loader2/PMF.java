@@ -64,16 +64,27 @@ public class PMF {
      * @param application
      */
     public static final void init(Application application) {
+        // 保持对Application的引用
         setApplicationContext(application);
 
+        // 1.这里创建了一个叫 Tasks 的类，在里面中创建了一个主线程的 Handler
+        // 2.通过当前进程的名字判断应该将插件分配到哪个进程中,目前通过 sPluginProcessIndex 标识
+        // 3.存储当前进程uid到静态变量 PluginManager.sUid
         PluginManager.init(application);
 
+        // PmBase 是 RePlugin 中非常重要的对象，它本身和它内部引用的其他对象掌握了RePlugin中很多重要的功能
+        // PmBase 它本身和它内部引用的其他对象掌握了 RePlugin 中很多重要的功能,例如：分配坑位、初始化插件信息、Client 端连接 Server 端、加载插件、更新插件、删除插件、等等
+        // 根据当前进程类型，拼接坑位provider和Service所对应名称并存入不同的HashSet中，PmBase类中处理保存了Provider、Service、Activitiy的坑位信息，
+        // 这些名字全部都是Replugin在编译的时候在AndroidManifest.xml中声明的坑位名字
         sPluginMgr = new PmBase(application);
         sPluginMgr.init();
 
+        // 将在PmBase构造中创建的 PluginCommImpl 赋值给 Factory.sPluginManager
         Factory.sPluginManager = PMF.getLocal();
+        // 将在PmBase构造中创建的 PluginLibraryInternalProxy 赋值给 Factory2.sPLProxy
         Factory2.sPLProxy = PMF.getInternal();
 
+        // Replugin唯一hook点 hook系统ClassLoader
         PatchClassLoaderUtils.patch(application);
     }
 

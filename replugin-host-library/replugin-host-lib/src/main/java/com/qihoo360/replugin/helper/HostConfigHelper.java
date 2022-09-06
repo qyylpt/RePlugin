@@ -22,6 +22,8 @@ import com.qihoo360.replugin.utils.ReflectUtils;
  * 从宿主的 RePluginHostConfig 中获取一些字段值，
  * RepluginHostConfig 文件由 replugin-host-gradle 自动生成
  *
+ * 该类就是将宿主gradle配置在编译期生成的 com.qihoo360.replugin.gen.RePluginHostConfig（与BuildConfig同主目录）反射生成变量
+ *
  * @author RePlugin Team
  */
 

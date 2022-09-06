@@ -32,11 +32,13 @@ import com.qihoo360.replugin.component.process.ProcessPitProviderBase;
 import com.qihoo360.replugin.component.process.ProcessPitProviderPersist;
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.utils.CloseableUtils;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.util.Arrays;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 
 /**
  * @author RePlugin Team
@@ -76,6 +78,7 @@ public class PluginProviderStub {
         }
 
         if (SELECTION_MAIN_BINDER.equals(selection)) {
+            ZLog.r(TAG, "获取到 Host Binder Cursor");
             return BinderCursor.queryBinder(PMF.sPluginMgr.getHostBinder());
         }
 
@@ -168,11 +171,13 @@ public class PluginProviderStub {
                 if (LOG) {
                     LogDebug.d(PLUGIN_TAG, "proxy fetch binder: cursor is null");
                 }
+                ZLog.r(TAG, "UI 进程 or 插件进程（" + IPC.getCurrentProcessName() + "）获取 Host binder 失败, cursor 是 null");
                 return null;
             }
             while (cursor.moveToNext()) {
                 //
             }
+            ZLog.r(TAG, "UI 进程 or 插件进程（" + IPC.getCurrentProcessName() + "）获取 Host binder 成功");
             IBinder binder = BinderCursor.getBinder(cursor);
             if (LOG) {
                 LogDebug.d(PLUGIN_TAG, "proxy fetch binder: binder=" + binder);

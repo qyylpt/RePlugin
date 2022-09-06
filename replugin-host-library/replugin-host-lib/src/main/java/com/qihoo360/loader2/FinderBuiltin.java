@@ -27,6 +27,7 @@ import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.model.PluginInfo;
 
 import com.qihoo360.replugin.utils.IOUtils;
+import com.qihoo360.replugin.utils.ZLog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,6 +39,7 @@ import java.io.InputStream;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 import static com.qihoo360.replugin.helper.LogDebug.TAG_NO_PN;
 
 /**
@@ -74,6 +76,7 @@ public class FinderBuiltin {
             if (jo == null) {
                 continue;
             }
+            ZLog.rAppend("插件 : " + jo);
             String name = jo.getString("name");
             if (TextUtils.isEmpty(name)) {
                 if (LOG) {
@@ -96,6 +99,7 @@ public class FinderBuiltin {
             }
             all.addBuiltin(info);
         }
+        ZLog.rAppendEnd(TAG);
     }
 
 }

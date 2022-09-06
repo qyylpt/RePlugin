@@ -35,6 +35,7 @@ import com.qihoo360.replugin.component.utils.IntentMatcherHelper;
 import com.qihoo360.replugin.ext.parser.ApkParser;
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.model.PluginInfo;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +46,7 @@ import java.util.Set;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 
 /**
  * 用来快速获取四大组件和Application的系统Info的List
@@ -94,7 +96,9 @@ public class ComponentList {
      * 注意：仅框架内部使用
      */
     public ComponentList(PackageInfo pi, String path, PluginInfo pli) {
+        StringBuilder componentList = new StringBuilder();
         if (pi.activities != null) {
+            componentList.append("\n    提取插件 : Activity : ");
             for (ActivityInfo ai : pi.activities) {
                 if (LOG) {
                     LogDebug.d(PLUGIN_TAG, "activity=" + ai.name);
@@ -108,9 +112,13 @@ public class ComponentList {
                     ai.processName = ai.packageName;
                 }
                 mActivities.put(ai.name, ai);
+                componentList.append("\n    " + ai.name);
             }
+            ZLog.r(TAG, componentList.toString());
+            componentList.delete(0, componentList.length());
         }
         if (pi.providers != null) {
+            componentList.append("\n    提取插件 : ContentProvider : ");
             for (ProviderInfo ppi : pi.providers) {
                 if (LOG) {
                     LogDebug.d(PLUGIN_TAG, "provider=" + ppi.name + "; auth=" + ppi.authority);
@@ -123,9 +131,13 @@ public class ComponentList {
                 }
                 mProvidersByName.put(ppi.name, ppi);
                 mProvidersByAuthority.put(ppi.authority, ppi);
+                componentList.append("\n    " + ppi.authority);
             }
+            ZLog.r(TAG, componentList.toString());
+            componentList.delete(0, componentList.length());
         }
         if (pi.services != null) {
+            componentList.append("\n     提取插件 : Service : ");
             for (ServiceInfo si : pi.services) {
                 if (LOG) {
                     LogDebug.d(PLUGIN_TAG, "service=" + si.name);
@@ -137,9 +149,13 @@ public class ComponentList {
                     si.processName = si.packageName;
                 }
                 mServices.put(si.name, si);
+                componentList.append("\n   " + si.name);
             }
+            ZLog.r(TAG, componentList.toString());
+            componentList.delete(0, componentList.length());
         }
         if (pi.receivers != null) {
+            componentList.append("\n    提取插件 : BroadcastReceiver : ");
             for (ActivityInfo ri : pi.receivers) {
                 if (LOG) {
                     LogDebug.d(PLUGIN_TAG, "receiver=" + ri.name);
@@ -151,7 +167,10 @@ public class ComponentList {
                     ri.processName = ri.packageName;
                 }
                 mReceivers.put(ri.name, ri);
+                componentList.append("\n    " + ri.name);
             }
+            ZLog.r(TAG, componentList.toString());
+            componentList.delete(0, componentList.length());
         }
 
         // 解析 Apk 中的 AndroidManifest.xml
@@ -163,7 +182,7 @@ public class ComponentList {
 
         // 生成组件与 IntentFilter 的对应关系
         ManifestParser.INS.parse(pli, manifest);
-
+        ZLog.r(TAG, "Manifest 解析 完成(插件中组件 action 过滤条件提取)");
         mApplication = pi.applicationInfo;
 
         if (mApplication.dataDir == null) {

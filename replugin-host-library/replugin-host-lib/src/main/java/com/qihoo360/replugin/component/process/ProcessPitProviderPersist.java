@@ -23,6 +23,7 @@ import android.net.Uri;
 
 import com.qihoo360.loader2.PluginProviderStub;
 import com.qihoo360.replugin.base.IPC;
+import com.qihoo360.replugin.utils.ZLog;
 
 /**
  * @author RePlugin Team
@@ -50,6 +51,7 @@ public class ProcessPitProviderPersist extends ContentProvider {
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         sInvoked = true;
+        ZLog.r(TAG, "通过 provider 检索 Host binder...");
         return PluginProviderStub.stubMain(uri, projection, selection, selectionArgs, sortOrder);
     }
 

@@ -23,11 +23,14 @@ import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.qihoo360.replugin.base.IPC;
 import com.qihoo360.replugin.helper.LogDebug;
 import com.qihoo360.replugin.model.PluginInfo;
+import com.qihoo360.replugin.utils.ZLog;
 
 import static com.qihoo360.replugin.helper.LogDebug.LOG;
 import static com.qihoo360.replugin.helper.LogDebug.PLUGIN_TAG;
+import static com.qihoo360.replugin.helper.LogDebug.TAG;
 
 /**
  * @author RePlugin Team
@@ -105,6 +108,7 @@ public class BinderCursor extends MatrixCursor {
         if (LOG) {
             LogDebug.d(PLUGIN_TAG, "get binder = " + w.mBinder);
         }
+        ZLog.r(TAG, "UI 进程 or 插件进程（" + IPC.getCurrentProcessName() + "）获取 Host binder : " + w.mBinder);
         return w.mBinder;
     }
 }

@@ -41,6 +41,7 @@ import com.qihoo360.replugin.model.PluginInfo;
 import com.qihoo360.replugin.packages.PluginManagerProxy;
 import com.qihoo360.replugin.utils.AssetsUtils;
 import com.qihoo360.replugin.utils.FileUtils;
+import com.qihoo360.replugin.utils.ZLog;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -658,6 +659,7 @@ class Plugin {
             try {
                 // 至此，该插件已开始运行
                 PluginManagerProxy.addToRunningPluginsNoThrows(mInfo.getName());
+                ZLog.r(TAG, "添加插件(" + mInfo.getName() + ")当前进程的正在运行插件列表\"，并同步到Server端");
             } catch (Throwable e) {
                 if (LOGR) {
                     LogRelease.e(PLUGIN_TAG, "p.u.1: " + e.getMessage(), e);
@@ -679,6 +681,7 @@ class Plugin {
 
         // 删除优化dex文件
         File odex = mInfo.getDexFile();
+        ZLog.r(TAG, "删除插件(" + mInfo.getName() + ")优化后 odex 文件 : " + odex.getAbsolutePath());
         if (odex.exists()) {
             if (LOG) {
                 LogDebug.d(PLUGIN_TAG, logTag + ": delete exist odex=" + odex.getAbsolutePath());
@@ -761,11 +764,25 @@ class Plugin {
         if (mLoader == null) {
             // 试图释放文件
             PluginInfo info = null;
+            ZLog.rAppend("开始安装插件(doLoad)......");
+            ZLog.rAppend("插件信息 : " + mInfo);
             if (mInfo.getType() == PluginInfo.TYPE_BUILTIN) {
                 //内置插件，首次加载的时候，把数据写到p.l中，然后把文件拷贝到对应目录
                 File dir = new File(mInfo.getApkDir());
+                ZLog.rAppend("插件位置 : " + dir.getAbsolutePath());
+
+                // 获取Dex（优化后）生成时所在的目录 <p>
+                // Android O之前：
+                //   若为"纯APK"插件，则会位于app_p_od中；若为"p-n"插件，则会位于"app_plugins_v3_odex"中 <p>
+                //   若支持同版本覆盖安装的话，则会位于app_p_c中； <p>
+                //
+                // Android O：
+                //   APK存放目录/oat/{cpuType}
+
                 File dexdir = mInfo.getDexParentDir();
+                ZLog.rAppend("插件优化后Dex位置 : " + dexdir.getAbsolutePath());
                 String dstName = mInfo.getApkFile().getName();
+                // 释放插件信息（拷贝 assets下插件、插件so -> 指定目录）
                 boolean rc = AssetsUtils.quickExtractTo(context, mInfo, dir.getAbsolutePath(), dstName, dexdir.getAbsolutePath());
                 if (!rc) {
                     // extract built-in plugin failed: plugin=
@@ -808,12 +825,13 @@ class Plugin {
                 }
                 return false;
             }
-
+            ZLog.rAppend("loadDex 完成！！！");
             // 设置插件为“使用过的”
             // 注意，需要重新获取当前的PluginInfo对象，而非使用“可能是新插件”的mInfo
             try {
                 long start = System.currentTimeMillis();
                 PluginManagerProxy.updateUsedIfNeeded(mInfo.getName(), mInfo.getPath(), mInfo.getType(), true);
+                ZLog.rAppend("去常驻进程更新isUsed状态，并发送到所有进程中更新");
                 mInfo.setIsUsed(true);
                 if (LOG) {
                     Log.d(TAG_NO_PN, "update " + mInfo.getName() + " time=" + (System.currentTimeMillis() - start));
@@ -829,6 +847,7 @@ class Plugin {
             // 若需要加载Dex，则还同时需要初始化插件里的Entry对象
             if (load == LOAD_APP) {
                 // NOTE Entry对象是可以在任何线程中被调用到
+                ZLog.rAppend("若需要加载Dex，则还同时需要初始化插件里的Entry对象");
                 if (!loadEntryLocked(manager)) {
                     return false;
                 }
@@ -840,7 +859,8 @@ class Plugin {
                 Log.d(TAG_NO_PN, "load entry for  " + mInfo.getName() + " time=" + (System.currentTimeMillis() - startApp));
             }
         }
-
+        ZLog.rAppend("load 插件 过程 结束...");
+        ZLog.rAppendEnd(TAG);
         if (load == LOAD_INFO) {
             return mLoader.isPackageInfoLoaded();
         } else if (load == LOAD_RESOURCES) {
